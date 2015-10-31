@@ -45,7 +45,7 @@
       {
          "type": "guest",
          "executable": "node",
-         "arguments": ["hello.js"],
+         "arguments": ["server.js"],
          "options": {
             "workdir": "../node",
             "watch": {
