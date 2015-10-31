@@ -129,9 +129,9 @@ window.onload = function() {
         isDrawing = false;
       }
     } else {*/
-      ///////////////////////////////////
-      // MOUSE EVENT
-      ///////////////////////////////////
+    ///////////////////////////////////
+    // MOUSE EVENT
+    ///////////////////////////////////
     canvas.onmousedown = function(e) {
         isDrawing = true;
         if (sampling === 0) return;
