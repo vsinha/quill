@@ -196,8 +196,10 @@ var Ploma = function(canvas) {
   //
   this.setStrokes = function(strokes) {
     // Clear and set rendering to false
-    this.clear();
+    //this.clear();
     //applyRendering = !applyRendering;
+    console.log("setting strokes: " + JSON.stringify(strokes));
+    console.log("number of strokes: " + strokes.length);
 
     // Redraw all the strokes
     for(var i = 0; i < strokes.length; i++) {

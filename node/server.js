@@ -13,19 +13,19 @@ connection.onopen = function (session) {
    // example of printing json blobs for updating the canvas
    // (really just as serverside logging
    function printJSON (args) {
-      var msg = args[0];
-      console.log("event for 'printJSON' received: " + msg);
+      console.log("event for 'printJSON' received: " + JSON.stringify(args));
    }
 
-   session.subscribe('com.quill.testsession', printJSON).then(
+   session.subscribe('com.quill.newStroke', printJSON).then(
       function (sub) {
-         console.log("subscribed to topic 'testsession'");
+         console.log("subscribed to topic 'newStroke'");
       },
       function (err) {
          console.log("failed to subscribe: " + err);
       }
    );
 
+   /*
    // also subscribe to a counter to test the connection
    function on_counter (args) {
       var counter = args[0];
@@ -48,6 +48,7 @@ connection.onopen = function (session) {
 
       counter += 1;
    }, 1000);
+   */
 };
 
 connection.open();
