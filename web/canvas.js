@@ -206,8 +206,7 @@ window.onload = function() {
         console.log("Connected");
         session = newSession;
         // SUBSCRIBE to a topic and receive events
-        //
-
+        
         // subscribe to new stroke event
         function newStroke (stroke) {
 

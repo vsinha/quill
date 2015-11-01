@@ -63,7 +63,6 @@ var Ploma = function(canvas) {
   // 0-1) values.
   //
   this.beginStroke = function(x, y, p) {
-    
     var point = new Point(x,y,p);
     pointCounter++;
 
@@ -80,7 +79,6 @@ var Ploma = function(canvas) {
 
     // Reset step offset for new stroke
     stepOffset = stepInterval;
-    
   }
 
   // ------------------------------------------
@@ -203,12 +201,14 @@ var Ploma = function(canvas) {
 
     // Redraw all the strokes
     for(var i = 0; i < strokes.length; i++) {
+      console.log("0: " + strokes.length);
       var stroke = strokes[i];
       this.beginStroke(
         stroke[0].x,
         stroke[0].y,
         stroke[0].p
       );
+      console.log("1: " + strokes.length);
       for(var j = 1; j < stroke.length-1; j++) {
         this.extendStroke(
           stroke[j].x,
@@ -216,12 +216,15 @@ var Ploma = function(canvas) {
           stroke[j].p
         );
       }
+      console.log("2: " + strokes.length);
       this.endStroke(
         stroke[stroke.length-1].x,
         stroke[stroke.length-1].y,
         stroke[stroke.length-1].p
       );
+      console.log("3: " + strokes.length);
     }
+    console.log("4: " + strokes.length);
   }
 
   // ------------------------------------------
