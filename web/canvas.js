@@ -23,6 +23,9 @@ var isDrawing = false;
 var connection;
 var session;
 
+// create a unique ID for the client
+var clientID = Math.floor((Math.random() * 10000));
+console.log("My ID is: " + clientID);
 
 /////////////
 // ONLOAD
