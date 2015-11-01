@@ -23,17 +23,6 @@ var isDrawing = false;
 var connection;
 var session;
 
-// Red Pixel
-var r = new Uint8ClampedArray(16);
-var rid;
-r[0] = 255;
-r[3] = 255;
-r[4] = 255;
-r[7] = 255;
-r[8] = 255;
-r[11] = 255;
-r[12] = 255;
-r[15] = 255;
 
 /////////////
 // ONLOAD
@@ -64,10 +53,6 @@ window.onload = function() {
         url: wsuri,
         realm: "realm1"
     });
-
-    // populate red pixel
-    rid = canvas.getContext('2d').createImageData(2, 2);
-    rid.data.set(r);
 
     // load Ploma onto canvas and clear it
     ploma = new Ploma(canvas);
