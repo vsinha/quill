@@ -33,6 +33,7 @@ window.onload = function() {
     canvas = document.getElementById('canvas');
     canvas.setAttribute('width', window.innerWidth);
     canvas.setAttribute('height', window.innerHeight);
+
     save = document.getElementById('save');
     clear = document.getElementById('clear');
     cursor = document.getElementById('cursor');
@@ -48,7 +49,6 @@ window.onload = function() {
     }
 
     // the WAMP connection to the Router
-    //
     connection = new autobahn.Connection({
         url: wsuri,
         realm: "realm1"
@@ -68,7 +68,6 @@ window.onload = function() {
 
     clear.onclick = function(e) {
       ploma.clear();
-
       session.publish("com.quill.clear");
     }
 
@@ -83,16 +82,12 @@ window.onload = function() {
       }
     }
 
-    ////////////
     // RESIZE
-    ////////////
     window.onresize = function(e) {
       ploma.resize(window.innerWidth, window.innerHeight);
     }
 
-    ///////////////////////////////////
     // MOUSE EVENT
-    ///////////////////////////////////
     canvas.onmousedown = function(e) {
         isDrawing = true;
 
