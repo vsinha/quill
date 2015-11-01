@@ -9,7 +9,6 @@ var mode;
 var save;
 var clear;
 var cursor;
-var texture;
 var plugin;
 var extendStroke;
 
@@ -45,14 +44,10 @@ window.onload = function() {
     canvas = document.getElementById('canvas');
     canvas.setAttribute('width', window.innerWidth);
     canvas.setAttribute('height', window.innerHeight);
-    mode = document.getElementById('mode');
     save = document.getElementById('save');
     clear = document.getElementById('clear');
     cursor = document.getElementById('cursor');
-    texture = document.getElementById('texture');
     plugin = document.getElementById('wtPlugin');
-    mode.innerHTML = sampling;
-    //texture.innerHTML = "T";
 
     // set up autobahn WAMP connection
     var wsuri;
@@ -70,7 +65,6 @@ window.onload = function() {
         realm: "realm1"
     });
 
-
     // populate red pixel
     rid = canvas.getContext('2d').createImageData(2, 2);
     rid.data.set(r);
@@ -83,17 +77,16 @@ window.onload = function() {
     ////////////
     // BUTTONS
     ////////////
-    mode.onclick = function(e) {
-      sampling = (sampling === 2) ? 0 : sampling + 1;
-      ploma.setSample(sampling);
-      mode.innerHTML = sampling; 
-    }
     save.onclick = function(e) {
       window.open(canvas.toDataURL());
     }
+
     clear.onclick = function(e) {
       ploma.clear();
+
+      session.publish("com.quill.clear");
     }
+
     cursor.onclick = function(e) {
       // TODO: UPDATE CHECKBOX OR IMAGE ON BUTTON
       if(canvas.style.cursor === 'none') {
@@ -104,14 +97,6 @@ window.onload = function() {
         canvas.style.cursor = 'none';
       }
     }
-    /*texture.onclick = function(e) {
-      ploma.toggleTexture();
-      if (texture.innerHTML === "T") {
-        texture.innerHTML = "N";
-      } else {
-        texture.innerHTML = "T";
-      }
-    }*/
 
     ////////////
     // RESIZE
@@ -120,67 +105,25 @@ window.onload = function() {
       ploma.resize(window.innerWidth, window.innerHeight);
     }
 
-    // bind device input events
-    /*if(window.PointerEvent) {
-      ///////////////////////////////////
-      // POINTER EVENT
-      ///////////////////////////////////
-      canvas.onpointerdown = function(e) {
-        ploma.beginStroke(
-          e.clientX,
-          e.clientY,
-          e.pressure
-        );
-        isDrawing = true;
-      }
-      canvas.onpointermove = function(e) {
-        if (!isDrawing) return;
-        ploma.extendStroke(
-          e.clientX,
-          e.clientY,
-          e.pressure
-        );
-      }
-      canvas.onpointerup = function(e) {
-        ploma.endStroke(
-          e.clientX,
-          e.clientY,
-          e.pressure
-        );
-        isDrawing = false;
-      }
-    } else {*/
     ///////////////////////////////////
     // MOUSE EVENT
     ///////////////////////////////////
     canvas.onmousedown = function(e) {
         isDrawing = true;
 
-        ploma.beginStroke(
-          e.clientX,
-          e.clientY,
-          0.9
-        );
+        ploma.beginStroke( e.clientX, e.clientY, 0.9 );
         session.publish("com.quill.beginStroke", [e.clientX, e.clientY, 0.9]);
     }
     canvas.onmousemove = function(e) {
         if (!isDrawing) return;
 
-        ploma.extendStroke(
-          e.clientX,
-          e.clientY,
-          0.9
-        );
+        ploma.extendStroke( e.clientX, e.clientY, 0.9 );
         session.publish("com.quill.extendStroke", [e.clientX, e.clientY, 0.9]);
     }
     canvas.onmouseup = function(e) {
         isDrawing = false;
 
-        ploma.endStroke(
-          e.clientX,
-          e.clientY,
-          0.9
-        );
+        ploma.endStroke( e.clientX, e.clientY, 0.9 );
         var curstroke = ploma.curStroke();
 
         session.publish("com.quill.endStroke", [e.clientX, e.clientY, 0.9]);
@@ -193,37 +136,43 @@ window.onload = function() {
     //
     connection.onopen = function (newSession, details) {
         console.log("Connected");
-        session = newSession;
-        // SUBSCRIBE to a topic and receive events
-        
-        // subscribe to new stroke event
-        var beginStrokeEventName = "com.quill.beginStroke";
-        session.subscribe(beginStrokeEventName, function (args) {
-            console.log(args);
-            ploma.beginStroke( args[0], args[1], args[2] );
-        }).then(
-            function (sub) { console.log("subscribed to " + beginStrokeEventName); },
-            function (err) { console.log("error subscribing to " + beginStrokeEventName + ": " + err); }
-        );
-        
-        // subscribe to new stroke event
-        var extendStrokeEventName = "com.quill.extendStroke";
-        session.subscribe(extendStrokeEventName, function (args) {
-            console.log(args);
-            ploma.extendStroke( args[0], args[1], args[2] );
-        }).then(
-            function (sub) { console.log("subscribed to " + extendStrokeEventName); },
-            function (err) { console.log("error subscribing to " + extendStrokeEventName + ": " + err); }
-        );
 
-        var endStrokeEventName = "com.quill.endStroke";
-        session.subscribe(endStrokeEventName, function (args) {
-            console.log(args);
+        session = newSession;
+
+        // generic function to subscribe to a topic and receive events
+        var subscribeEvent = function (eventName, func) {
+            session.subscribe(eventName, func).then(
+                function (sub) { 
+                    console.log("subscribed to " + eventName); 
+                },
+                function (err) { 
+                    console.log("error subscribing to " + eventName  + ": " + err); 
+                });
+        }
+
+        // subscribe to new stroke event
+        subscribeEvent("com.quill.beginStroke", function (args) {
+            console.log("beginStroke: " + args);
+            ploma.beginStroke( args[0], args[1], args[2] );
+        });
+        
+        // subscribe to extend stroke event
+        subscribeEvent("com.quill.extendStroke", function (args) {
+            console.log("extendStroke: " + args);
+            ploma.extendStroke( args[0], args[1], args[2] );
+        });
+
+        // subscribe to end stroke event
+        subscribeEvent("com.quill.endStroke", function (args) {
+            console.log("endstroke: " + args);
             ploma.endStroke( args[0], args[1], args[2] );
-        }).then(
-            function (sub) { console.log("subscribed to " + endStrokeEventName); },
-            function (err) { console.log("error subscribing to " + endStrokeEventName + ": " + err); }
-        );
+        });
+
+        // subscribe to the clear screen event 
+        subscribeEvent("com.quill.clear", function () {
+            ploma.clear();
+        });
+
     };
 
      // fired when connection was lost (or could not be established)
