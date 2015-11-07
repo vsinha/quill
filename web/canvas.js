@@ -147,7 +147,6 @@ window.onload = function() {
         function findOrCreatePloma(theirGUID) {
           if (theirGUID in plomaDictionary) {
             console.log("existing canvas found");
-            plomaDictionary[theirGUID].beginStroke( args[1], args[2], args[3] );
           } else {
             // if not, create a canvas and a ploma instance for the new GUID
             console.log("creating a new canvas for guid: " + theirGUID);
@@ -167,41 +166,42 @@ window.onload = function() {
             // finally, add the new ploma to our dictionary for safekeeping
             plomaDictionary[theirGUID] = newPloma;
           }
-          return plomaDictionary[theirGUID];
         };
 
         // subscribe to new stroke event
         subscribeEvent("com.quill.beginStroke", function (args) {
-            console.log("beginStroke: " + args);
             var theirGUID = args[0]; 
-            var newcanvas = findOrCreatePloma(theirGUID);
-            newcanvas.beginStroke(args[1], args[2], args[3]);
+
+            findOrCreatePloma(theirGUID);
+
+            if (theirGUID in plomaDictionary) {
+              console.log("beginStroke: " + args);
+              plomaDictionary[theirGUID].beginStroke(args[1], args[2], args[3]);
+            } else {console.log("error begin");}
         });
         
         // subscribe to extend stroke event
         subscribeEvent("com.quill.extendStroke", function (args) {
-            console.log("extendStroke: " + args);
             var theirGUID = args[0]; 
 
             // check if we've seen this GUID before
             if (theirGUID in plomaDictionary) {
-                console.log("here2");
+                console.log("extendStroke: " + args);
                 // add the stroke to the corresponding GUID's ploma instance
                 plomaDictionary[theirGUID].extendStroke( args[1], args[2], args[3] );
-            } 
+            } else {console.log("error extend");}
         });
 
         // subscribe to end stroke event
         subscribeEvent("com.quill.endStroke", function (args) {
-            console.log("endstroke: " + args);
             var theirGUID = args[0]; 
 
             // check if we've seen this GUID before
             if (theirGUID in plomaDictionary) {
-                console.log("here4");
+                console.log("endstroke: " + args);
                 // add the stroke to the corresponding GUID's ploma instance
                 plomaDictionary[theirGUID].endStroke( args[1], args[2], args[3] );
-            } 
+            } else {console.log("error end");}
         });
 
         // subscribe to the clear screen event 
