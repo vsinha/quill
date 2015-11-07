@@ -9,11 +9,17 @@ body {
     top: 0px;
     left: 0px;
 }
+
+#myCanvas {
+    z-index: 999;
+    opacity: 0.6;
+}
 object {
     width: 0px; /* hide */
     height: 0px; /* hide */
 }
 .button {
+    z-index:1000;
     height: 50px;
     width: 50px;
     position: absolute;
