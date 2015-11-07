@@ -1,8 +1,5 @@
 "use strict";
 
-// TEST
-var elapsed;
-
 // DOM
 var canvas;
 var mode;
