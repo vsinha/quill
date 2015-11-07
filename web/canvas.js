@@ -23,9 +23,22 @@ var isDrawing = false;
 var connection;
 var session;
 
+// dictionary to store all plomas from all other client GUIDs
+var plomaDictionary = {};
+
 // create a unique ID for the client
-var clientID = Math.floor((Math.random() * 10000));
-console.log("My ID is: " + clientID);
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+};
+
+var GUID = guid();
+console.log("My GUID is: " + GUID);
 
 /////////////
 // ONLOAD
@@ -33,7 +46,7 @@ console.log("My ID is: " + clientID);
 window.onload = function() {
 
     // load DOM elements
-    canvas = document.getElementById('canvas');
+    canvas = document.getElementById('myCanvas');
     canvas.setAttribute('width', window.innerWidth);
     canvas.setAttribute('height', window.innerHeight);
 
@@ -67,12 +80,12 @@ window.onload = function() {
     ////////////
     save.onclick = function(e) {
       window.open(canvas.toDataURL());
-    }
+    };
 
     clear.onclick = function(e) {
       ploma.clear();
       session.publish("com.quill.clear");
-    }
+    };
 
     cursor.onclick = function(e) {
       // TODO: UPDATE CHECKBOX OR IMAGE ON BUTTON
@@ -83,34 +96,32 @@ window.onload = function() {
         document.getElementById('cursor-icon').setAttribute('src', 'img/cursor-24-75.png');
         canvas.style.cursor = 'none';
       }
-    }
+    };
 
     // RESIZE
     window.onresize = function(e) {
       ploma.resize(window.innerWidth, window.innerHeight);
-    }
+    };
 
     // MOUSE EVENT
     canvas.onmousedown = function(e) {
         isDrawing = true;
 
         ploma.beginStroke( e.clientX, e.clientY, 0.9 );
-        session.publish("com.quill.beginStroke", [e.clientX, e.clientY, 0.9]);
-    }
+        session.publish("com.quill.beginStroke", [GUID, e.clientX, e.clientY, 0.9]);
+    };
     canvas.onmousemove = function(e) {
         if (!isDrawing) return;
 
         ploma.extendStroke( e.clientX, e.clientY, 0.9 );
-        session.publish("com.quill.extendStroke", [e.clientX, e.clientY, 0.9]);
-    }
+        session.publish("com.quill.extendStroke", [GUID, e.clientX, e.clientY, 0.9]);
+    };
     canvas.onmouseup = function(e) {
         isDrawing = false;
 
         ploma.endStroke( e.clientX, e.clientY, 0.9 );
-        var curstroke = ploma.curStroke();
-
-        session.publish("com.quill.endStroke", [e.clientX, e.clientY, 0.9]);
-    }
+        session.publish("com.quill.endStroke", [GUID, e.clientX, e.clientY, 0.9]);
+    };
 
     // timers
     //
@@ -131,24 +142,136 @@ window.onload = function() {
                 function (err) { 
                     console.log("error subscribing to " + eventName  + ": " + err); 
                 });
-        }
+        };
+
+        var findOrCreatePloma = function(theirGUID) {
+            console.log("here0");
+
+            // check if we've seen this GUID before
+            if (theirGUID in plomaDictionary) {
+                console.log("here");
+
+            } else {
+                // if not, create a canvas and a ploma instance for the new GUID
+                console.log("creating a new canvas for guid: " + theirGUID);
+                var newCanvas = document.createElement('canvas');
+                newCanvas.id = theirGUID; // because why not
+                newCanvas.setAttribute('width', window.innerWidth);
+                newCanvas.setAttribute('height', window.innerHeight);
+
+                // add our canvas to the DOM
+                document.getElementById('canvases').appendChild(newCanvas);
+
+                // load Ploma onto canvas and clear it
+                var newPloma = new Ploma(newCanvas);
+                newPloma.clear();
+
+                // finally, add the new ploma to our dictionary for safekeeping
+                plomaDictionary[theirGUID] = newPloma;
+            }
+
+            return plomaDictionary[theirGUID];
+        };
 
         // subscribe to new stroke event
         subscribeEvent("com.quill.beginStroke", function (args) {
+
             console.log("beginStroke: " + args);
-            ploma.beginStroke( args[0], args[1], args[2] );
+
+            var theirGUID = args[0];
+
+            //var newcanvas = findOrCreatePloma(arg[0]);
+            if (theirGUID in plomaDictionary) {
+                console.log("here");
+
+            } else {
+                // if not, create a canvas and a ploma instance for the new GUID
+                console.log("creating a new canvas for guid: " + theirGUID);
+                var newCanvas = document.createElement('canvas');
+                newCanvas.id = theirGUID; // because why not
+                newCanvas.setAttribute('width', window.innerWidth);
+                newCanvas.setAttribute('height', window.innerHeight);
+
+                // add our canvas to the DOM
+                document.getElementById('canvases').appendChild(newCanvas);
+
+                // load Ploma onto canvas and clear it
+                var newPloma = new Ploma(newCanvas);
+                newPloma.clear();
+
+                // finally, add the new ploma to our dictionary for safekeeping
+                plomaDictionary[theirGUID] = newPloma;
+            }
+            console.log("here99");
+            
+            newcanvas.beginStroke(args[1], args[2], args[3]);
         });
         
         // subscribe to extend stroke event
         subscribeEvent("com.quill.extendStroke", function (args) {
             console.log("extendStroke: " + args);
-            ploma.extendStroke( args[0], args[1], args[2] );
+
+            // check if we've seen this GUID before
+            if (theirGUID in plomaDictionary) {
+                console.log("here2");
+                // add the stroke to the corresponding GUID's ploma instance
+                plomaDictionary[theirGUID].extendStroke( args[1], args[2], args[3] );
+
+            } else {
+                console.log("here3");
+                // if not, create a canvas and a ploma instance for the new GUID
+                var newCanvas = document.createElement('canvas');
+                newCanvas.id = theirGUID; // because why not
+                newCanvas.setAttribute('width', window.innerWidth);
+                newCanvas.setAttribute('height', window.innerHeight);
+
+                // add our canvas to the DOM
+                document.getElementById('canvases').appendChild(newCanvas);
+
+                // load Ploma onto canvas and clear it
+                var newPloma = new Ploma(newCanvas);
+                newPloma.clear();
+
+                // apply the action we've just recieved
+                newPloma.extendStroke( args[1], args[2], args[3] );
+
+                // finally, add the new ploma to our dictionary for safekeeping
+                plomaDictionary[theirGUID] = newPloma;
+            }
         });
 
         // subscribe to end stroke event
         subscribeEvent("com.quill.endStroke", function (args) {
             console.log("endstroke: " + args);
-            ploma.endStroke( args[0], args[1], args[2] );
+
+            // check if we've seen this GUID before
+            if (theirGUID in plomaDictionary) {
+                console.log("here4");
+                // add the stroke to the corresponding GUID's ploma instance
+                plomaDictionary[theirGUID].endStroke( args[1], args[2], args[3] );
+
+            } else {
+                // if not, create a canvas and a ploma instance for the new GUID
+                console.log("6 creating a new canvas for guid: " + theirGUID);
+                var newCanvas = document.createElement('canvas');
+                newCanvas.id = theirGUID; // because why not
+                newCanvas.className = "noselect";
+                newCanvas.setAttribute('width', window.innerWidth);
+                newCanvas.setAttribute('height', window.innerHeight);
+
+                // add our canvas to the DOM
+                document.getElementById('canvases').appendChild(newCanvas);
+
+                // load Ploma onto canvas and clear it
+                var newPloma = new Ploma(newCanvas);
+                newPloma.clear();
+
+                // apply the action we've just recieved
+                newPloma.endStroke( args[1], args[2], args[3] );
+
+                // finally, add the new ploma to our dictionary for safekeeping
+                plomaDictionary[theirGUID] = newPloma;
+            }
         });
 
         // subscribe to the clear screen event 
@@ -161,7 +284,7 @@ window.onload = function() {
      // fired when connection was lost (or could not be established)
     connection.onclose = function (reason, details) {
         console.log("Connection lost: " + reason);
-    }
+    };
 
     // now actually open the connection
     connection.open();

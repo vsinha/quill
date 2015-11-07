@@ -3,7 +3,7 @@ body {
     width: 100%;
     height: 100%;
 }
-.plomacanvas {
+.plomaCanvas {
     /* cursor: none; */ /* this hides the cursor while it's in the canvas */
     position: absolute;
     top: 0px;
