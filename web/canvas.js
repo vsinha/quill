@@ -9,17 +9,13 @@ var mode;
 var save;
 var clear;
 var cursor;
-var plugin;
-var extendStroke;
 
 // State
-var sampling = 2;
 var ploma = null;
-var w;// = 1300;
-var h;// = 1000;
 var isDrawing = false;
 
-// WAMP session global
+// WAMP session globals
+var GUID;
 var connection;
 var session;
 
@@ -28,21 +24,17 @@ var plomaDictionary = {};
 
 // create a unique ID for the client
 function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+        .toString(16)
+        .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        s4() + '-' + s4() + s4() + s4();
 };
 
-var GUID = guid();
-console.log("My GUID is: " + GUID);
 
-/////////////
 // ONLOAD
-/////////////
 window.onload = function() {
 
     // load DOM elements
@@ -53,7 +45,9 @@ window.onload = function() {
     save = document.getElementById('save');
     clear = document.getElementById('clear');
     cursor = document.getElementById('cursor');
-    plugin = document.getElementById('wtPlugin');
+
+    GUID = guid();
+    console.log("My GUID is: " + GUID);
 
     // set up autobahn WAMP connection
     var wsuri;
@@ -61,7 +55,7 @@ window.onload = function() {
         wsuri = "ws://127.0.0.1:8080/ws";
     } else {
         wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
-        document.location.host + "/ws";
+            document.location.host + "/ws";
     }
 
     // the WAMP connection to the Router
@@ -73,39 +67,40 @@ window.onload = function() {
     // load Ploma onto canvas and clear it
     ploma = new Ploma(canvas);
     ploma.clear();
-    extendStroke = ploma.extendStroke;
 
     ////////////
     // BUTTONS
     ////////////
     save.onclick = function(e) {
-      window.open(canvas.toDataURL());
+        window.open(canvas.toDataURL());
     };
 
     clear.onclick = function(e) {
-      ploma.clear();
-      session.publish("com.quill.clear");
+        ploma.clear();
+        session.publish("com.quill.clear");
     };
 
     cursor.onclick = function(e) {
-      // TODO: UPDATE CHECKBOX OR IMAGE ON BUTTON
-      if(canvas.style.cursor === 'none') {
-        document.getElementById('cursor-icon').setAttribute('src', 'img/cursor-24.png');
-        canvas.style.cursor = 'crosshair';
-      } else {
-        document.getElementById('cursor-icon').setAttribute('src', 'img/cursor-24-75.png');
-        canvas.style.cursor = 'none';
-      }
+        // TODO: UPDATE CHECKBOX OR IMAGE ON BUTTON
+        if(canvas.style.cursor === 'none') {
+            document.getElementById('cursor-icon').setAttribute('src', 'img/cursor-24.png');
+            canvas.style.cursor = 'crosshair';
+        } else {
+            document.getElementById('cursor-icon').setAttribute('src', 'img/cursor-24-75.png');
+            canvas.style.cursor = 'none';
+        }
     };
 
     // RESIZE
     window.onresize = function(e) {
-      ploma.resize(window.innerWidth, window.innerHeight);
+        ploma.resize(window.innerWidth, window.innerHeight);
     };
 
     // MOUSE EVENT
     canvas.onmousedown = function(e) {
-        isDrawing = true;
+        // we use this to make sure we're capturing a full pen stroke
+        // and not random mouse movement
+        isDrawing = true; 
 
         ploma.beginStroke( e.clientX, e.clientY, 0.9 );
         session.publish("com.quill.beginStroke", [GUID, e.clientX, e.clientY, 0.9]);
@@ -123,14 +118,11 @@ window.onload = function() {
         session.publish("com.quill.endStroke", [GUID, e.clientX, e.clientY, 0.9]);
     };
 
-    // timers
-    //
-    //var t1, t2;
-    // fired when connection is established and session attached
-    //
+    // pub/sub to WAMP events
     connection.onopen = function (newSession, details) {
-        console.log("Connected");
+        console.log("Connected!");
 
+        // set the global so our other functions can publish their events
         session = newSession;
 
         // generic function to subscribe to a topic and receive events
@@ -145,27 +137,29 @@ window.onload = function() {
         };
 
         function findOrCreatePloma(theirGUID) {
-          if (theirGUID in plomaDictionary) {
-            console.log("existing canvas found");
-          } else {
-            // if not, create a canvas and a ploma instance for the new GUID
-            console.log("creating a new canvas for guid: " + theirGUID);
-            var newCanvas = document.createElement('canvas');
-            newCanvas.id = theirGUID; // because why not
-            newCanvas.className = "plomaCanvas noselect"; // set it up the way the og canvas is
-            newCanvas.setAttribute('width', window.innerWidth);
-            newCanvas.setAttribute('height', window.innerHeight);
+            if (theirGUID in plomaDictionary) {
+                console.log("existing canvas found");
 
-            // add our canvas to the DOM
-            document.getElementById('canvases').appendChild(newCanvas);
+            } else {
+                // if not, create a canvas and a ploma instance for the new GUID
+                console.log("creating a new canvas for guid: " + theirGUID);
 
-            // load Ploma onto canvas and clear it
-            var newPloma = new Ploma(newCanvas);
-            newPloma.clear();
+                var newCanvas = document.createElement('canvas');
+                newCanvas.id = theirGUID; // because why not
+                newCanvas.className = "plomaCanvas noselect"; 
+                newCanvas.setAttribute('width', window.innerWidth);
+                newCanvas.setAttribute('height', window.innerHeight);
 
-            // finally, add the new ploma to our dictionary for safekeeping
-            plomaDictionary[theirGUID] = newPloma;
-          }
+                // add our canvas to the DOM
+                document.getElementById('canvases').appendChild(newCanvas);
+
+                // load Ploma onto canvas and clear it
+                var newPloma = new Ploma(newCanvas);
+                newPloma.clear();
+
+                // finally, add the new ploma to our dictionary for safekeeping
+                plomaDictionary[theirGUID] = newPloma;
+            }
         };
 
         // subscribe to new stroke event
@@ -175,33 +169,35 @@ window.onload = function() {
             findOrCreatePloma(theirGUID);
 
             if (theirGUID in plomaDictionary) {
-              console.log("beginStroke: " + args);
-              plomaDictionary[theirGUID].beginStroke(args[1], args[2], args[3]);
-            } else {console.log("error begin");}
+                console.log("beginStroke: " + args);
+                plomaDictionary[theirGUID].beginStroke(args[1], args[2], args[3]);
+            } else {
+                console.log("error begin");
+            }
         });
-        
+
         // subscribe to extend stroke event
         subscribeEvent("com.quill.extendStroke", function (args) {
             var theirGUID = args[0]; 
 
-            // check if we've seen this GUID before
             if (theirGUID in plomaDictionary) {
                 console.log("extendStroke: " + args);
-                // add the stroke to the corresponding GUID's ploma instance
                 plomaDictionary[theirGUID].extendStroke( args[1], args[2], args[3] );
-            } else {console.log("error extend");}
+            } else {
+                console.log("error extend");
+            }
         });
 
         // subscribe to end stroke event
         subscribeEvent("com.quill.endStroke", function (args) {
             var theirGUID = args[0]; 
 
-            // check if we've seen this GUID before
             if (theirGUID in plomaDictionary) {
                 console.log("endstroke: " + args);
-                // add the stroke to the corresponding GUID's ploma instance
                 plomaDictionary[theirGUID].endStroke( args[1], args[2], args[3] );
-            } else {console.log("error end");}
+            } else {
+                console.log("error end");
+            }
         });
 
         // subscribe to the clear screen event 
@@ -211,7 +207,7 @@ window.onload = function() {
 
     };
 
-     // fired when connection was lost (or could not be established)
+    // fired when connection was lost (or could not be established)
     connection.onclose = function (reason, details) {
         console.log("Connection lost: " + reason);
     };
