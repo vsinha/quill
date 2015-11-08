@@ -368,9 +368,9 @@ var Ploma = function(canvas) {
 
   // this should prevent us from trying to mess with the canvas
   // before the page has loaded
-  window.addEventListener("load", function(event) {
+  //window.addEventListener("load", function(event) {
     getSamplesFromImage(inkTextureImage, inkTextureSamples);
-  }, false);
+    //}, false);
 
   // ------------------------------------------
   // redraw
