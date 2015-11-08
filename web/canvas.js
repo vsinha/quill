@@ -143,6 +143,25 @@ window.onload = function() {
             }
         };
 
+        // subscribe to "session.on_join" to keep an up-to-date client list
+        // TODO: I don't think subscribing to 'session.on_leave' makes much sense:
+        //  the only real action to take on_leave would be to remove the client ID
+        //  from the list, but we don't want to remove their canvas so that seems pointless
+        // REAL solution is to implement authorization and id/write to the canvas
+        //  based on authID rather than the ever-shifting sessionID
+        var topic = "wamp.session.on_join";
+        session.subscribe(topic, function(args, kwargs, details) {
+            console.log("on_join sessionID detected: " + args[0].session);
+            createPlomaForSessionID(args[0].session);
+        }).then(
+            function (sub) {
+                console.log('Subscribed to meta topic ' + topic);
+            },
+            function (err) {
+                console.log('Failed to subscribe to meta topic ' + topic, err);
+            }
+        );
+
         // for our first action as a new subscriber, get the list of all subscribers
         // and then create a canvas for each subscriber
         session.call("wamp.session.list").then(
@@ -165,7 +184,8 @@ window.onload = function() {
                 },
                 function (err) { 
                     console.log("error subscribing to " + eventName  + ": " + err); 
-                });
+                }
+            );
         };
 
         // subscribe to new stroke event
@@ -173,7 +193,7 @@ window.onload = function() {
             var theirGUID = details.publisher; 
 
             console.log("details.publisher: " + details.publisher);
-            findOrCreatePloma(theirGUID);
+            //findOrCreatePloma(theirGUID);
 
             if (theirGUID in plomaDictionary) {
                 console.log("beginStroke: " + args);
