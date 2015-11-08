@@ -365,7 +365,8 @@ var Ploma = function(canvas) {
   var inkTextureSamples = new Float32Array(textureSamplesLength);
 
 
-  // TODO
+  // this should prevent us from trying to mess with the canvas
+  // before the page has loaded
   window.addEventListener("load", function(event) {
     getSamplesFromImage(inkTextureImage, inkTextureSamples);
   }, false);
