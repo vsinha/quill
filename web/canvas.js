@@ -12,24 +12,11 @@ var ploma = null;
 var isDrawing = false;
 
 // WAMP session globals
-var GUID;
 var connection;
 var session;
 
 // dictionary to store all plomas from all other client GUIDs
 var plomaDictionary = {};
-
-// create a unique ID for the client
-function guid() {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000)
-        .toString(16)
-        .substring(1);
-    }
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-        s4() + '-' + s4() + s4() + s4();
-};
-
 
 // ONLOAD
 window.onload = function() {
@@ -42,9 +29,6 @@ window.onload = function() {
     save = document.getElementById('save');
     clear = document.getElementById('clear');
     cursor = document.getElementById('cursor');
-
-    GUID = guid();
-    console.log("My GUID is: " + GUID);
 
     // set up autobahn WAMP connection
     var wsuri;
@@ -100,19 +84,19 @@ window.onload = function() {
         isDrawing = true; 
 
         ploma.beginStroke( e.clientX, e.clientY, 0.9 );
-        session.publish("com.quill.beginStroke", [GUID, e.clientX, e.clientY, 0.9]);
+        session.publish("com.quill.beginStroke", [e.clientX, e.clientY, 0.9]);
     };
     canvas.onmousemove = function(e) {
         if (!isDrawing) return;
 
         ploma.extendStroke( e.clientX, e.clientY, 0.9 );
-        session.publish("com.quill.extendStroke", [GUID, e.clientX, e.clientY, 0.9]);
+        session.publish("com.quill.extendStroke", [e.clientX, e.clientY, 0.9]);
     };
     canvas.onmouseup = function(e) {
         isDrawing = false;
 
         ploma.endStroke( e.clientX, e.clientY, 0.9 );
-        session.publish("com.quill.endStroke", [GUID, e.clientX, e.clientY, 0.9]);
+        session.publish("com.quill.endStroke", [e.clientX, e.clientY, 0.9]);
     };
 
     // pub/sub to WAMP events
@@ -121,28 +105,24 @@ window.onload = function() {
 
         // set the global so our other functions can publish their events
         session = newSession;
+        console.log("My WAMP session ID is : " + session.id);
 
-        // generic function to subscribe to a topic and receive events
-        var subscribeEvent = function (eventName, func) {
-            session.subscribe(eventName, func).then(
-                function (sub) { 
-                    console.log("subscribed to " + eventName); 
-                },
-                function (err) { 
-                    console.log("error subscribing to " + eventName  + ": " + err); 
-                });
-        };
+        // reveal our session ID on every publish
+        session.publisher_disclose_me = true;
 
-        function findOrCreatePloma(theirGUID) {
-            if (theirGUID in plomaDictionary) {
-                console.log("existing canvas found");
+        session.call("wamp.subscription.lookup", ["com.quill.beginStroke", { match: "wildcard" }]).then(session.log, session.log)
 
+        function createPlomaForSessionID(theirID) {
+            if (theirID in plomaDictionary 
+                || theirID == session.id) {
+                // make sure we don't have this one already (and that it's not ours
+                console.log("error: existing canvas found");
             } else {
                 // if not, create a canvas and a ploma instance for the new GUID
-                console.log("creating a new canvas for guid: " + theirGUID);
+                console.log("creating a new canvas for guid: " + theirID);
 
                 var newCanvas = document.createElement('canvas');
-                newCanvas.id = theirGUID; // because why not
+                newCanvas.id = theirID; // because why not
                 newCanvas.className = "plomaCanvas noselect"; 
                 newCanvas.setAttribute('width', window.innerWidth);
                 newCanvas.setAttribute('height', window.innerHeight);
@@ -155,43 +135,70 @@ window.onload = function() {
                 newPloma.clear();
 
                 // finally, add the new ploma to our dictionary for safekeeping
-                plomaDictionary[theirGUID] = newPloma;
+                plomaDictionary[theirID] = newPloma;
             }
         };
 
-        // subscribe to new stroke event
-        subscribeEvent("com.quill.beginStroke", function (args) {
-            var theirGUID = args[0]; 
+        // for our first action as a new subscriber, get the list of all subscribers
+        // and then create a canvas for each subscriber
+        session.call("wamp.session.list").then(
+            function (sessions) {
+                console.log("Current session IDs on realm", sessions);
+                for (var i = 0; i < sessions.length; ++i) {
+                    createPlomaForSessionID(sessions[i]);
+                }
+            },
+            function (err) {
+                console.log("Could not retrieve subscription for topic", err);
+            }
+        );
 
+        // generic function to subscribe to a topic and receive events
+        var subscribeEvent = function (eventName, func) {
+            session.subscribe(eventName, func).then(
+                function (sub) { 
+                    console.log("subscribed to " + eventName); 
+                },
+                function (err) { 
+                    console.log("error subscribing to " + eventName  + ": " + err); 
+                });
+        };
+
+
+        // subscribe to new stroke event
+        subscribeEvent("com.quill.beginStroke", function (args, kwargs, details) {
+            var theirGUID = details.publisher; 
+
+            console.log("details.publisher: " + details.publisher);
             findOrCreatePloma(theirGUID);
 
             if (theirGUID in plomaDictionary) {
                 console.log("beginStroke: " + args);
-                plomaDictionary[theirGUID].beginStroke(args[1], args[2], args[3]);
+                plomaDictionary[theirGUID].beginStroke(args[0], args[1], args[2]);
             } else {
                 console.log("error begin");
             }
         });
 
         // subscribe to extend stroke event
-        subscribeEvent("com.quill.extendStroke", function (args) {
-            var theirGUID = args[0]; 
+        subscribeEvent("com.quill.extendStroke", function (args, kwargs, details) {
+            var theirGUID = details.publisher; 
 
             if (theirGUID in plomaDictionary) {
                 console.log("extendStroke: " + args);
-                plomaDictionary[theirGUID].extendStroke( args[1], args[2], args[3] );
+                plomaDictionary[theirGUID].extendStroke(args[0], args[1], args[2]);
             } else {
                 console.log("error extend");
             }
         });
 
         // subscribe to end stroke event
-        subscribeEvent("com.quill.endStroke", function (args) {
-            var theirGUID = args[0]; 
+        subscribeEvent("com.quill.endStroke", function (args, kwargs, details) {
+            var theirGUID = details.publisher; 
 
             if (theirGUID in plomaDictionary) {
                 console.log("endstroke: " + args);
-                plomaDictionary[theirGUID].endStroke( args[1], args[2], args[3] );
+                plomaDictionary[theirGUID].endStroke(args[0], args[1], args[2]);
             } else {
                 console.log("error end");
             }
