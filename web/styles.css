@@ -12,7 +12,6 @@ body {
 
 #myCanvas {
     z-index: 999;
-    opacity: 0.6;
 }
 object {
     width: 0px; /* hide */
