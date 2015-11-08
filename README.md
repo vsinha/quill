@@ -1,3 +1,11 @@
-# hello
+# quill
 
-All Node.js application code is in `hello/node/hello.js`. The backend is called from JavaScript, which is in `hello/web/index.html`.
+quill is a shared whiteboard 
+
+## running
+```
+$ pip install -r requirements.txt # ideally into a virtualenv for this project
+$ crossbar start
+```
+Then navigate multiple browser windows (!) to `localhost:8080`.
+
