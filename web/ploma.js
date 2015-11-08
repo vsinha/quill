@@ -363,7 +363,12 @@ var Ploma = function(canvas) {
   var inkTextureImageDataGrays = [];
   var inkTextureImage = getImageFromBase64(inkTextureBase64(), "jpeg")
   var inkTextureSamples = new Float32Array(textureSamplesLength);
-  getSamplesFromImage(inkTextureImage, inkTextureSamples);
+
+
+  // TODO
+  window.addEventListener("load", function(event) {
+    getSamplesFromImage(inkTextureImage, inkTextureSamples);
+  }, false);
 
   // ------------------------------------------
   // redraw
