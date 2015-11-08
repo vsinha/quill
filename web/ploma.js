@@ -711,11 +711,11 @@ var Ploma = function(canvas) {
         oldA = id[idx_3] / 255;
 
         // Transparent vs. opaque background
-        //if(oldA === 1) {
+        if(oldA === 1) {
           newR = penR * a + oldR * invA;
           newG = penG * a + oldG * invA;
           newB = penB * a + oldB * invA;
-        /*} else {
+        } else {
           newA = a + oldA * invA;
           newR = (penR * a + oldR * oldA * invA) / newA;
           newG = (penG * a + oldG * oldA * invA) / newA;
@@ -723,7 +723,7 @@ var Ploma = function(canvas) {
           newA = newA * 255;
           // Set new A
           id[idx_3] = newA;
-        }*/
+        }
 
         // Set new RGB
         id[idx_0] = newR;
