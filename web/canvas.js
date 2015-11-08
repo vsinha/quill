@@ -223,13 +223,20 @@ window.onload = function() {
                 console.log("endstroke: " + args);
                 plomaDictionary[theirGUID].endStroke(args[0], args[1], args[2]);
             } else {
-                console.log("error end");
+                console.log("error end: " + args);
             }
         });
 
         // subscribe to the clear screen event 
-        subscribeEvent("com.quill.clear", function () {
-            ploma.clear();
+        subscribeEvent("com.quill.clear", function (args, kwargs, details) {
+            var theirGUID = details.publisher; 
+
+            if (theirGUID in plomaDictionary) {
+                console.log("clear: " + args);
+                plomaDictionary[theirGUID].clear();
+            } else {
+                console.log("error clear: " + args);
+            }
         });
 
     };
