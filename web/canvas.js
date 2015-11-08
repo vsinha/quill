@@ -110,13 +110,17 @@ window.onload = function() {
         // reveal our session ID on every publish
         session.publisher_disclose_me = true;
 
-        session.call("wamp.subscription.lookup", ["com.quill.beginStroke", { match: "wildcard" }]).then(session.log, session.log)
+        // for debugging, log who all is subscribed when we open our connection
+        session.call("wamp.subscription.lookup", 
+        ["com.quill.beginStroke", { match: "wildcard" }])
+        .then(session.log, session.log)
 
         function createPlomaForSessionID(theirID) {
-            if (theirID in plomaDictionary 
-                || theirID == session.id) {
-                // make sure we don't have this one already (and that it's not ours
-                console.log("error: existing canvas found");
+            // make sure we don't have this one already (and that it's not ours
+            if (theirID in plomaDictionary) {
+                console.log("error: existing canvas found", theirID);
+            } else if (theirID == session.id) {
+                console.log("normal: don't want to add ourselves again", theirID);
             } else {
                 // if not, create a canvas and a ploma instance for the new GUID
                 console.log("creating a new canvas for guid: " + theirID);
@@ -163,7 +167,6 @@ window.onload = function() {
                     console.log("error subscribing to " + eventName  + ": " + err); 
                 });
         };
-
 
         // subscribe to new stroke event
         subscribeEvent("com.quill.beginStroke", function (args, kwargs, details) {
