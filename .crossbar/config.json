@@ -25,6 +25,7 @@
          ],
          "transports": [
             {
+               "id": "web",
                "type": "web",
                "endpoint": {
                   "type": "tcp",
@@ -33,7 +34,7 @@
                "paths": {
                   "/": {
                      "type": "static",
-                     "directory": "../web"
+                     "directory": "../src/web"
                   },
                   "ws": {
                      "type": "websocket"
@@ -43,13 +44,14 @@
          ]
       },
       {
+         "id": "node_server",
          "type": "guest",
          "executable": "node",
          "arguments": ["server.js"],
          "options": {
-            "workdir": "../node",
+            "workdir": "../src/node",
             "watch": {
-               "directories": ["../node"],
+               "directories": ["../src/node"],
                "action": "restart"
             }
          }
