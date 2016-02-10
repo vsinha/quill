@@ -4,7 +4,7 @@
   "description": "browser based collaborative pen-enabled whiteboard",
   "main": "src/node/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [
     "crossbario",
@@ -13,6 +13,7 @@
   "author": "Viraj Sinha",
   "license": "Apache 2.0",
   "dependencies": {
-    "autobahn": "^0.9.5"
+    "autobahn": "^0.9.5",
+    "mocha": "^2.4.5"
   }
 }
