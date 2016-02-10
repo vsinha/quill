@@ -1,4 +1,7 @@
-# quill
+# quill 
+
+
+[![Circle CI](https://circleci.com/gh/vsinha/quill.svg?style=shield)](https://circleci.com/gh/vsinha/quill)
 
 quill is a shared whiteboard 
 
